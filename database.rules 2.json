@@ -1,0 +1,52 @@
+{
+  "rules": {
+    "users": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')"
+      }
+    },
+    "tasks": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "ideas": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "events": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "messages": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "conversations": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "organizations": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "posts": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "notifications": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null"
+      }
+    },
+    "forms": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "formResponses": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}

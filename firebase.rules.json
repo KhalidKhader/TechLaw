@@ -1,0 +1,145 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child($uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')",
+        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')",
+        "status": {
+          ".write": "auth != null && ((!data.exists() && auth.uid === $uid) || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')"
+        },
+        "role": {
+          ".write": "auth != null && ((!data.exists() && auth.uid === $uid && newData.val() === 'viewer') || root.child('users').child(auth.uid).child('role').val() === 'superAdmin' || (root.child('users').child(auth.uid).child('role').val() === 'admin' && newData.val() !== 'admin' && newData.val() !== 'superAdmin'))"
+        },
+        "permissions": {
+          ".write": "auth != null && ((!data.exists() && auth.uid === $uid) || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')"
+        },
+        "profile": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')"
+        }
+      }
+    },
+
+    "editRequests": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$requestId": {
+        ".read": "auth != null && (root.child('editRequests').child($requestId).child('requestedBy').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')",
+        ".write": "auth != null && ((!data.exists() && newData.child('requestedBy').val() === auth.uid) || root.child('editRequests').child($requestId).child('requestedBy').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')"
+      }
+    },
+
+    "tasks": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      "$taskId": {
+        ".read": "auth != null && (data.child('createdBy').val() === auth.uid || data.child('assignedTo').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')",
+        ".write": "auth != null && ((!data.exists() && (root.child('users').child(auth.uid).child('role').val() !== 'viewer' || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')) || (data.exists() && (data.child('createdBy').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin' || data.child('assignedTo').val() === auth.uid)))",
+        "comments": {
+          ".write": "auth != null && (data.parent().child('assignedTo').val() === auth.uid || data.parent().child('createdBy').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')"
+        }
+      }
+    },
+
+    "ideas": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      "$ideaId": {
+        ".read": "auth != null && (data.child('submittedBy').val() === auth.uid || data.child('visibility').val() === 'all' || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')",
+        ".write": "auth != null && ((!data.exists() && root.child('users').child(auth.uid).child('role').val() !== 'viewer') || (data.exists() && (data.child('submittedBy').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')))",
+        "status": {
+          ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')"
+        },
+        "likes": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'"
+        }
+      }
+    },
+
+    "requests": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      ".write": "auth != null",
+      "$requestId": {
+        ".read": "auth != null && (root.child('requests').child($requestId).child('createdBy').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')",
+        ".write": "auth != null && ((!data.exists() && newData.child('createdBy').val() === auth.uid) || root.child('requests').child($requestId).child('createdBy').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')",
+        "status": {
+          ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')"
+        }
+      }
+    },
+
+    "organizations": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      "$orgId": {
+        ".read": "auth != null && (data.child('status').val() === 'approved' || data.child('submittedBy').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')",
+        ".write": "auth != null && ((!data.exists() && root.child('users').child(auth.uid).child('role').val() !== 'viewer') || (data.exists() && (data.child('submittedBy').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')))",
+        "status": {
+          ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')"
+        }
+      }
+    },
+
+    "events": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      "$eventId": {
+        ".read": "auth != null && (data.child('createdBy').val() === auth.uid || (data.child('type').val() === 'global' && data.child('status').val() === 'approved') || data.child('attendees').child(auth.uid).val() === true || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')",
+        ".write": "auth != null && ((!data.exists() && root.child('users').child(auth.uid).child('role').val() !== 'viewer') || (data.exists() && (data.child('createdBy').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')))",
+        "status": {
+          ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')"
+        }
+      }
+    },
+
+    "messages": {
+      "$conversationId": {
+        ".read": "auth != null && (root.child('conversations').child($conversationId).child('participants').child(auth.uid).val() === true || root.child('users').child(auth.uid).child('status').val() === 'approved')",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+        "$messageId": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'"
+        }
+      }
+    },
+
+    "conversations": {
+      "$convId": {
+        ".read": "auth != null && (data.child('participants').child(auth.uid).val() === true || root.child('users').child(auth.uid).child('status').val() === 'approved')",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'"
+      }
+    },
+
+    "forms": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      "$formId": {
+        ".read": "auth != null && (data.child('status').val() === 'approved' || data.child('createdBy').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')",
+        ".write": "auth != null && ((!data.exists() && root.child('users').child(auth.uid).child('role').val() !== 'viewer') || (data.exists() && (data.child('createdBy').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')))",
+        "status": {
+          ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')"
+        }
+      }
+    },
+
+    "posts": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'",
+      "$postId": {
+        ".read": "auth != null && (data.child('visibility').val() === 'all' || data.child('authorId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')",
+        ".write": "auth != null && ((!data.exists() && root.child('users').child(auth.uid).child('role').val() !== 'viewer') || (data.exists() && (data.child('authorId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')))",
+        "comments": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'"
+        },
+        "likes": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() === 'approved'"
+        }
+      }
+    },
+
+    "notifications": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$notifId": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'superAdmin')"
+        }
+      }
+    }
+  }
+}
