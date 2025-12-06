@@ -11,27 +11,21 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
-  Divider,
   InputAdornment,
   CircularProgress,
   Badge,
-  Chip,
   Stack,
   Avatar,
   useTheme,
   alpha,
-  Button,
 } from '@mui/material';
 import {
   Send as SendIcon,
   Search as SearchIcon,
-  MoreVert as MoreVertIcon,
-  AttachFile as AttachFileIcon,
-  EmojiEmotions as EmojiIcon,
   Circle as OnlineIcon,
   Person as PersonIcon,
 } from '@mui/icons-material';
-import { ref, onValue, push, set, update } from 'firebase/database';
+import { ref, onValue, push, update } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../hooks/useI18n';
@@ -40,11 +34,10 @@ import { sendNotification, NotificationTemplates } from '../utils/notificationHe
 
 const MessagesPagePro = () => {
   const { user, userData } = useAuth();
-  const { t, language } = useI18n();
+  const { t } = useI18n();
   const theme = useTheme();
   const location = useLocation();
   const isDarkMode = theme.palette.mode === 'dark';
-  const isRTL = language === 'ar';
   
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -132,6 +125,7 @@ const MessagesPagePro = () => {
 
       return () => unsubscribeMessages();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUser?.uid, user?.uid]);
 
   useEffect(() => {

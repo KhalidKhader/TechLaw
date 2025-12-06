@@ -28,8 +28,8 @@ import {
   Save,
   Edit as EditIcon
 } from '@mui/icons-material';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useI18n } from '../hooks/useI18n';
 import { toast } from 'react-hot-toast';
@@ -50,7 +50,6 @@ const TabPanel = (props) => {
 
 const SettingsPage = () => {
   const { userData, currentUser } = useAuth();
-  const { mode, toggleTheme } = useTheme();
   const { language, toggleLanguage } = useLanguage();
   const { t } = useI18n();
   const [tabValue, setTabValue] = useState(0);
@@ -62,10 +61,61 @@ const SettingsPage = () => {
     eventReminders: true
   });
   const [editRequestDialog, setEditRequestDialog] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    current: '',
+    new: '',
+    confirm: ''
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   const handleSaveNotifications = () => {
     // Save to Firebase
     toast.success('Notification settings saved');
+  };
+
+  const handlePasswordChange = async () => {
+    if (!passwordData.new || !passwordData.confirm || !passwordData.current) {
+      toast.error(t('errors.fillRequired'));
+      return;
+    }
+
+    if (passwordData.new !== passwordData.confirm) {
+      toast.error(t('validation.passwordMismatch'));
+      return;
+    }
+
+    if (passwordData.new.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      // Re-authenticate user
+      const credential = EmailAuthProvider.credential(
+        currentUser.email,
+        passwordData.current
+      );
+      
+      await reauthenticateWithCredential(currentUser, credential);
+      
+      // Update password
+      await updatePassword(currentUser, passwordData.new);
+      
+      toast.success('Password updated successfully');
+      setPasswordData({ current: '', new: '', confirm: '' });
+    } catch (error) {
+      console.error('Password change error:', error);
+      if (error.code === 'auth/wrong-password') {
+        toast.error('Current password is incorrect');
+      } else if (error.code === 'auth/weak-password') {
+        toast.error('New password is too weak');
+      } else {
+        toast.error('Failed to update password: ' + error.message);
+      }
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   return (
@@ -193,12 +243,13 @@ const SettingsPage = () => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
-          <Typography variant="h6" gutterBottom>{t('settings.notificationPreferences')}</Typography>
-          <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-            {t('settings.notificationPreferencesDesc')}
-          </Typography>
+          <Card sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>{t('settings.notificationPreferences')}</Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+              {t('settings.notificationPreferences Desc')}
+            </Typography>
 
-          <List>
+            <List>
             <ListItem>
               <ListItemText 
                 primary={t('settings.emailNotifications')}
@@ -269,41 +320,30 @@ const SettingsPage = () => {
             </ListItem>
           </List>
 
-          <Box sx={{ mt: 3 }}>
-            <Button 
-              variant="contained" 
-              startIcon={<Save />}
-              onClick={handleSaveNotifications}
-            >
-              {t('settings.savePreferences')}
-            </Button>
-          </Box>
+            <Box sx={{ mt: 3 }}>
+              <Button 
+                variant="contained" 
+                startIcon={<Save />}
+                onClick={handleSaveNotifications}
+              >
+                {t('settings.savePreferences')}
+              </Button>
+            </Box>
+          </Card>
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
-          <Typography variant="h6" gutterBottom>{t('settings.appearanceSettings')}</Typography>
-          
-          <Card variant="outlined" sx={{ mt: 3, p: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Card sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              {t('settings.languagePreferences')}
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 2 }}>
               <Box>
-                <Typography variant="subtitle1" fontWeight="bold">{t('settings.darkMode')}</Typography>
-                <Typography variant="body2" color="textSecondary">
-                  {t('settings.darkModeDesc')}
+                <Typography variant="body1">
+                  {t('settings.currentLanguage')}
                 </Typography>
-              </Box>
-              <Switch 
-                checked={mode === 'dark'}
-                onChange={toggleTheme}
-              />
-            </Box>
-          </Card>
-
-          <Card variant="outlined" sx={{ mt: 2, p: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
-                <Typography variant="subtitle1" fontWeight="bold">{t('settings.languageSettings')}</Typography>
                 <Typography variant="body2" color="textSecondary">
-                  {t('settings.currentLanguage', { lang: language === 'en' ? 'English' : 'العربية' })}
+                  {language === 'en' ? 'English' : 'العربية'}
                 </Typography>
               </Box>
               <Button 
@@ -318,18 +358,21 @@ const SettingsPage = () => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={3}>
-          <Typography variant="h6" gutterBottom>{t('settings.security')}</Typography>
-          
-          <Card variant="outlined" sx={{ mt: 3, p: 2 }}>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+          <Card sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>{t('settings.security')}</Typography>
+
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 3, mb: 2 }}>
               {t('settings.changePassword')}
             </Typography>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
+            
+            <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
                   type="password"
                   label={t('settings.currentPassword')}
+                  value={passwordData.current}
+                  onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -337,6 +380,8 @@ const SettingsPage = () => {
                   fullWidth
                   type="password"
                   label={t('settings.newPassword')}
+                  value={passwordData.new}
+                  onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -344,15 +389,23 @@ const SettingsPage = () => {
                   fullWidth
                   type="password"
                   label={t('settings.confirmNewPassword')}
+                  value={passwordData.confirm}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
                 />
               </Grid>
               <Grid item xs={12}>
-                <Button variant="contained">{t('settings.updatePassword')}</Button>
+                <Button 
+                  variant="contained" 
+                  onClick={handlePasswordChange}
+                  disabled={passwordLoading}
+                >
+                  {passwordLoading ? 'Updating...' : t('settings.updatePassword')}
+                </Button>
               </Grid>
             </Grid>
-          </Card>
 
-          <Card variant="outlined" sx={{ mt: 3, p: 2 }}>
+            <Divider sx={{ my: 4 }} />
+
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
               {t('settings.accountStatus')}
             </Typography>

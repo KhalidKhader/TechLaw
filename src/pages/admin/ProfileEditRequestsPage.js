@@ -37,7 +37,7 @@ import { sendNotification, NotificationTemplates } from '../../utils/notificatio
 
 const ProfileEditRequestsPage = () => {
   const { userRole } = useAuth();
-  const { t } = useI18n();
+  useI18n();
   const [requests, setRequests] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [viewDialog, setViewDialog] = useState(false);

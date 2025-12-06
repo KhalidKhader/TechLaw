@@ -88,7 +88,7 @@ const CalendarPagePro = () => {
   const isAdmin = userRole === 'admin' || userRole === 'superAdmin';
 
   const getCreatorName = (event) => {
-    if (event.creatorName) {
+    if (event.creatorName && event.creatorName !== 'undefined undefined') {
       return event.creatorName;
     }
     

@@ -19,9 +19,7 @@ import {
   Assignment as TaskIcon,
   Lightbulb as IdeaIcon,
   Event as EventIcon,
-  Message as MessageIcon,
   CheckCircle as CheckIcon,
-  PendingActions as PendingIcon,
   Description as PostIcon,
 } from '@mui/icons-material';
 import { ref, onValue } from 'firebase/database';
@@ -30,7 +28,7 @@ import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../hooks/useI18n';
 
 const AnalyticsPage = () => {
-  const { user, userRole } = useAuth();
+  const { user } = useAuth();
   const { t } = useI18n();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
@@ -44,8 +42,6 @@ const AnalyticsPage = () => {
     posts: { total: 0, recent: 0 },
     messages: { total: 0 },
   });
-
-  const isAdmin = userRole === 'admin' || userRole === 'superAdmin';
 
   useEffect(() => {
     if (!user?.uid) return;

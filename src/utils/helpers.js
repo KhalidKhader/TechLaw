@@ -53,10 +53,15 @@ export const getInitials = (firstName, lastName) => {
 
 export const getUserFullName = (user) => {
   if (!user) return 'Unknown User';
-  if (user.firstName && user.lastName) {
-    return `${user.firstName} ${user.lastName}`;
+  
+  const firstName = user.firstName && user.firstName !== 'undefined' ? user.firstName : '';
+  const lastName = user.lastName && user.lastName !== 'undefined' ? user.lastName : '';
+  
+  if (firstName && lastName) {
+    return `${firstName} ${lastName}`;
   }
-  if (user.firstName) return user.firstName;
+  if (firstName) return firstName;
+  
   return user.displayName || user.email || 'Unknown User';
 };
 

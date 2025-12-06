@@ -7,8 +7,6 @@ import {
   Typography,
   Avatar,
   Grid,
-  Card,
-  CardContent,
   Chip,
   Button,
   Tabs,
@@ -24,12 +22,9 @@ import {
   alpha
 } from '@mui/material';
 import {
-  Person as PersonIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
   LocationOn as LocationIcon,
-  Work as WorkIcon,
-  School as SchoolIcon,
   Assignment as TaskIcon,
   Lightbulb as IdeaIcon,
   Event as EventIcon,
@@ -51,7 +46,7 @@ const PublicProfilePage = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
-  const { t } = useI18n();
+  useI18n();
   const theme = useTheme();
   
   const [profileUser, setProfileUser] = useState(null);

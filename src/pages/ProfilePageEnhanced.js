@@ -11,37 +11,34 @@ import {
   Avatar,
   Grid,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  List,
-  ListItem,
-  Chip,
-  Divider,
-  Alert,
   CircularProgress,
-  Card,
-  CardContent,
   useTheme,
   alpha,
   Stack,
   Badge,
-  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControlLabel,
+  Checkbox,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Person as PersonIcon,
   School as SchoolIcon,
   Work as WorkIcon,
   Star as StarIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
   Add as AddIcon,
   Save as SaveIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
-  LocationOn as LocationIcon,
   Camera as CameraIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../hooks/useI18n';
@@ -101,14 +98,14 @@ const ProfilePageEnhanced = () => {
   });
   
   const [editingId, setEditingId] = useState(null);
-
-  const loadProfileData = async () => {
+  
+  const loadProfileData = async (silent = false) => {
     if (!user?.uid) {
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
     
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const userDoc = await databaseService.getDocument(`users/${user.uid}`);
       if (userDoc) {
@@ -139,25 +136,27 @@ const ProfilePageEnhanced = () => {
         });
       }
       
-      const [eduData, skillsData, expData] = await Promise.all([
+      // Load additional profile data (education, skills, experience)
+      const [eduData, skillData, expData] = await Promise.all([
         databaseService.getEducation(user.uid),
         databaseService.getSkills(user.uid),
         databaseService.getExperience(user.uid),
       ]);
-      
+
       setEducation(eduData || []);
-      setSkills(skillsData || []);
+      setSkills(skillData || []);
       setExperience(expData || []);
     } catch (error) {
       console.error('Error loading profile:', error);
       showError('Failed to load profile data');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadProfileData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const handleSaveProfile = async () => {
@@ -243,7 +242,7 @@ const ProfilePageEnhanced = () => {
       }
       setEducationDialog(false);
       resetEducationForm();
-      loadProfileData();
+      loadProfileData(true);
     } catch (error) {
       showError('Failed to save education');
     }
@@ -262,7 +261,7 @@ const ProfilePageEnhanced = () => {
       }
       setSkillDialog(false);
       resetSkillForm();
-      loadProfileData();
+      loadProfileData(true);
     } catch (error) {
       showError('Failed to save skill');
     }
@@ -281,9 +280,45 @@ const ProfilePageEnhanced = () => {
       }
       setExperienceDialog(false);
       resetExperienceForm();
-      loadProfileData();
+      loadProfileData(true);
     } catch (error) {
       showError('Failed to save experience');
+    }
+  };
+
+  const handleDeleteEducation = async (id) => {
+    if (window.confirm('Are you sure you want to delete this education?')) {
+      try {
+        await databaseService.deleteEducation(user.uid, id);
+        showSuccess('Education deleted successfully');
+        loadProfileData(true);
+      } catch (error) {
+        showError('Failed to delete education');
+      }
+    }
+  };
+
+  const handleDeleteSkill = async (id) => {
+    if (window.confirm(t('common.deleteConfirm'))) {
+      try {
+        await databaseService.deleteSkill(user.uid, id);
+        showSuccess(t('user.skillDeleted'));
+        loadProfileData(true);
+      } catch (error) {
+        showError(t('user.skillDeleteError'));
+      }
+    }
+  };
+
+  const handleDeleteExperience = async (id) => {
+    if (window.confirm(t('common.deleteConfirm'))) {
+      try {
+        await databaseService.deleteExperience(user.uid, id);
+        showSuccess(t('user.experienceDeleted'));
+        loadProfileData(true);
+      } catch (error) {
+        showError(t('user.experienceDeleteError'));
+      }
     }
   };
 
@@ -358,7 +393,7 @@ const ProfilePageEnhanced = () => {
             </Grid>
             <Grid item xs>
               <Typography variant="h3" fontWeight="700" gutterBottom>
-                {profile.displayName || 'Complete Your Profile'}
+                {profile.displayName || t('user.completeProfile')}
               </Typography>
               <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
                 <Box display="flex" alignItems="center" gap={1}>
@@ -382,7 +417,7 @@ const ProfilePageEnhanced = () => {
                 </Typography>
               ) : (
                 <Typography variant="body1" sx={{ opacity: 0.7, fontStyle: 'italic' }}>
-                  Add a bio to tell others about yourself
+                  {t('user.addBio')}
                 </Typography>
               )}
             </Grid>
@@ -404,10 +439,10 @@ const ProfilePageEnhanced = () => {
               }
             }}
           >
-            <Tab label="Personal Information" icon={<PersonIcon />} />
-            <Tab label="Education" icon={<SchoolIcon />} />
-            <Tab label="Experience" icon={<WorkIcon />} />
-            <Tab label="Skills" icon={<StarIcon />} />
+            <Tab label={t('user.personalInfo')} icon={<PersonIcon />} />
+            <Tab label={t('user.education')} icon={<SchoolIcon />} />
+            <Tab label={t('user.experience')} icon={<WorkIcon />} />
+            <Tab label={t('user.skills')} icon={<StarIcon />} />
           </Tabs>
         </Box>
 
@@ -418,7 +453,7 @@ const ProfilePageEnhanced = () => {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="First Name"
+                  label={t('user.firstName')}
                   value={profile.firstName}
                   onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
                   sx={{ mb: 3 }}
@@ -427,7 +462,7 @@ const ProfilePageEnhanced = () => {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Last Name"
+                  label={t('user.lastName')}
                   value={profile.lastName}
                   onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
                   sx={{ mb: 3 }}
@@ -436,7 +471,7 @@ const ProfilePageEnhanced = () => {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Email"
+                  label={t('common.email')}
                   value={profile.email}
                   disabled
                   sx={{ mb: 3 }}
@@ -445,7 +480,7 @@ const ProfilePageEnhanced = () => {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Phone"
+                  label={t('common.phone')}
                   value={profile.phone}
                   onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                   sx={{ mb: 3 }}
@@ -456,10 +491,10 @@ const ProfilePageEnhanced = () => {
                   fullWidth
                   multiline
                   rows={4}
-                  label="Bio"
+                  label={t('user.bio')}
                   value={profile.bio}
                   onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  placeholder="Tell us about yourself..."
+                  placeholder={t('user.bioPlaceholder')}
                   sx={{ mb: 3 }}
                 />
               </Grid>
@@ -484,7 +519,7 @@ const ProfilePageEnhanced = () => {
             </Grid>
           )}
 
-          {/* Other tabs remain the same structure but with enhanced styling */}
+          {/* Education Tab */}
           {activeTab === 1 && (
             <Box>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -499,10 +534,439 @@ const ProfilePageEnhanced = () => {
                 </Button>
               </Box>
               {/* Education list */}
+              {education.length === 0 ? (
+                <Typography variant="body1" sx={{ opacity: 0.7, textAlign: 'center' }}>
+                  No education details found. Add your education information.
+                </Typography>
+              ) : (
+                education.map((edu) => (
+                  <Paper 
+                    key={edu.id} 
+                    elevation={1} 
+                    sx={{ 
+                      p: 2, 
+                      borderRadius: 2, 
+                      mb: 2, 
+                      border: `1px solid ${theme.palette.divider}` 
+                    }}
+                  >
+                    <Grid container spacing={2}>
+                      <Grid item xs>
+                        <Typography variant="subtitle1" fontWeight="500">
+                          {edu.degree}, {edu.field}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                          {edu.institution}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                          {new Date(edu.startDate).toLocaleDateString()} - {edu.current ? 'Present' : new Date(edu.endDate).toLocaleDateString()}
+                        </Typography>
+                      </Grid>
+                      <Grid item>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => {
+                            setEditingId(edu.id);
+                            setEducationForm({
+                              institution: edu.institution,
+                              degree: edu.degree,
+                              field: edu.field,
+                              startDate: edu.startDate,
+                              endDate: edu.endDate,
+                              description: edu.description,
+                            });
+                            setEducationDialog(true);
+                          }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleDeleteEducation(edu.id)}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Grid>
+                    </Grid>
+                  </Paper>
+                ))
+              )}
             </Box>
           )}
 
-          {/* Add similar enhanced styling for other tabs */}
+          {/* Experience Tab */}
+          {activeTab === 2 && (
+            <Box>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Typography variant="h5" fontWeight="600">Experience</Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setExperienceDialog(true)}
+                  sx={{ borderRadius: 3, textTransform: 'none' }}
+                >
+                  Add Experience
+                </Button>
+              </Box>
+              {/* Experience list */}
+              {experience.length === 0 ? (
+                <Typography variant="body1" sx={{ opacity: 0.7, textAlign: 'center' }}>
+                  No experience details found. Add your work experience.
+                </Typography>
+              ) : (
+                experience.map((exp) => (
+                  <Paper 
+                    key={exp.id} 
+                    elevation={1} 
+                    sx={{ 
+                      p: 2, 
+                      borderRadius: 2, 
+                      mb: 2, 
+                      border: `1px solid ${theme.palette.divider}` 
+                    }}
+                  >
+                    <Grid container spacing={2}>
+                      <Grid item xs>
+                        <Typography variant="subtitle1" fontWeight="500">
+                          {exp.position}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                          {exp.company}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                          {new Date(exp.startDate).toLocaleDateString()} - {exp.current ? 'Present' : new Date(exp.endDate).toLocaleDateString()}
+                        </Typography>
+                      </Grid>
+                      <Grid item>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => {
+                            setEditingId(exp.id);
+                            setExperienceForm({
+                              company: exp.company,
+                              position: exp.position,
+                              startDate: exp.startDate,
+                              endDate: exp.endDate,
+                              description: exp.description,
+                              current: exp.current,
+                            });
+                            setExperienceDialog(true);
+                          }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleDeleteExperience(exp.id)}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Grid>
+                    </Grid>
+                  </Paper>
+                ))
+              )}
+            </Box>
+          )}
+
+          {/* Skills Tab */}
+          {activeTab === 3 && (
+            <Box>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Typography variant="h5" fontWeight="600">Skills</Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setSkillDialog(true)}
+                  sx={{ borderRadius: 3, textTransform: 'none' }}
+                >
+                  Add Skill
+                </Button>
+              </Box>
+              {/* Skills list */}
+              {skills.length === 0 ? (
+                <Typography variant="body1" sx={{ opacity: 0.7, textAlign: 'center' }}>
+                  No skills found. Add skills to showcase your expertise.
+                </Typography>
+              ) : (
+                <Grid container spacing={2}>
+                  {skills.map((skill) => (
+                    <Grid item xs={12} sm={6} md={4} key={skill.id}>
+                      <Paper 
+                        elevation={1} 
+                        sx={{ 
+                          p: 2, 
+                          borderRadius: 2, 
+                          border: `1px solid ${theme.palette.divider}` 
+                        }}
+                      >
+                        <Grid container alignItems="center">
+                          <Grid item xs>
+                            <Typography variant="subtitle1" fontWeight="500">
+                              {skill.name}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                              Level: {skill.level}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                              Category: {skill.category}
+                            </Typography>
+                          </Grid>
+                          <Grid item>
+                            <IconButton 
+                              size="small" 
+                              onClick={() => {
+                                setEditingId(skill.id);
+                                setSkillForm({
+                                  name: skill.name,
+                                  level: skill.level,
+                                  category: skill.category,
+                                });
+                                setSkillDialog(true);
+                              }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleDeleteSkill(skill.id)}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Grid>
+                        </Grid>
+                      </Paper>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+            </Box>
+          )}
+
+          {/* Dialogs for adding/editing education, experience, and skills */}
+          {/* Education Dialog */}
+          <Dialog
+            open={educationDialog}
+            onClose={() => setEducationDialog(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>
+              {editingId ? 'Edit Education' : 'Add Education'}
+            </DialogTitle>
+            <DialogContent>
+              <TextField
+                label="Institution"
+                value={educationForm.institution}
+                onChange={(e) => setEducationForm({ ...educationForm, institution: e.target.value })}
+                fullWidth
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                label="Degree"
+                value={educationForm.degree}
+                onChange={(e) => setEducationForm({ ...educationForm, degree: e.target.value })}
+                fullWidth
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                label="Field of Study"
+                value={educationForm.field}
+                onChange={(e) => setEducationForm({ ...educationForm, field: e.target.value })}
+                fullWidth
+                sx={{ mb: 2 }}
+              />
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Start Date"
+                    type="date"
+                    value={educationForm.startDate}
+                    onChange={(e) => setEducationForm({ ...educationForm, startDate: e.target.value })}
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="End Date"
+                    type="date"
+                    value={educationForm.endDate}
+                    onChange={(e) => setEducationForm({ ...educationForm, endDate: e.target.value })}
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+              </Grid>
+              <TextField
+                label="Description"
+                value={educationForm.description}
+                onChange={(e) => setEducationForm({ ...educationForm, description: e.target.value })}
+                fullWidth
+                multiline
+                rows={4}
+                sx={{ mb: 2 }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setEducationDialog(false)} color="inherit">
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddEducation} 
+                variant="contained"
+                disabled={saving}
+                startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Experience Dialog */}
+          <Dialog
+            open={experienceDialog}
+            onClose={() => setExperienceDialog(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>
+              {editingId ? 'Edit Experience' : 'Add Experience'}
+            </DialogTitle>
+            <DialogContent>
+              <TextField
+                label="Company"
+                value={experienceForm.company}
+                onChange={(e) => setExperienceForm({ ...experienceForm, company: e.target.value })}
+                fullWidth
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                label="Position"
+                value={experienceForm.position}
+                onChange={(e) => setExperienceForm({ ...experienceForm, position: e.target.value })}
+                fullWidth
+                sx={{ mb: 2 }}
+              />
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Start Date"
+                    type="date"
+                    value={experienceForm.startDate}
+                    onChange={(e) => setExperienceForm({ ...experienceForm, startDate: e.target.value })}
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="End Date"
+                    type="date"
+                    value={experienceForm.endDate}
+                    onChange={(e) => setExperienceForm({ ...experienceForm, endDate: e.target.value })}
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+              </Grid>
+              <TextField
+                label="Description"
+                value={experienceForm.description}
+                onChange={(e) => setExperienceForm({ ...experienceForm, description: e.target.value })}
+                fullWidth
+                multiline
+                rows={4}
+                sx={{ mb: 2 }}
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={experienceForm.current}
+                    onChange={(e) => setExperienceForm({ ...experienceForm, current: e.target.checked })}
+                    color="primary"
+                  />
+                }
+                label="Currently working here"
+                sx={{ mb: 2 }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setExperienceDialog(false)} color="inherit">
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddExperience} 
+                variant="contained"
+                disabled={saving}
+                startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Skills Dialog */}
+          <Dialog
+            open={skillDialog}
+            onClose={() => setSkillDialog(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>
+              {editingId ? 'Edit Skill' : 'Add Skill'}
+            </DialogTitle>
+            <DialogContent>
+              <TextField
+                label="Skill Name"
+                value={skillForm.name}
+                onChange={(e) => setSkillForm({ ...skillForm, name: e.target.value })}
+                fullWidth
+                sx={{ mb: 2 }}
+              />
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Level</InputLabel>
+                <Select
+                  value={skillForm.level}
+                  onChange={(e) => setSkillForm({ ...skillForm, level: e.target.value })}
+                  label="Level"
+                >
+                  <MenuItem value="Beginner">Beginner</MenuItem>
+                  <MenuItem value="Intermediate">Intermediate</MenuItem>
+                  <MenuItem value="Expert">Expert</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={skillForm.category}
+                  onChange={(e) => setSkillForm({ ...skillForm, category: e.target.value })}
+                  label="Category"
+                >
+                  <MenuItem value="Technical">Technical</MenuItem>
+                  <MenuItem value="Soft Skill">Soft Skill</MenuItem>
+                  <MenuItem value="Language">Language</MenuItem>
+                </Select>
+              </FormControl>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setSkillDialog(false)} color="inherit">
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddSkill} 
+                variant="contained"
+                disabled={saving}
+                startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       </Paper>
     </Container>

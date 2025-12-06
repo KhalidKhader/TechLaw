@@ -21,6 +21,7 @@ import {
   Tab,
   Alert,
   CircularProgress,
+  Autocomplete,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -47,6 +48,7 @@ const OrganizationsPage = () => {
   const [orgDialog, setOrgDialog] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, orgId: null });
+  const [allUsers, setAllUsers] = useState([]);
   
   const [orgForm, setOrgForm] = useState({
     name: '',
@@ -55,9 +57,28 @@ const OrganizationsPage = () => {
     website: '',
     email: '',
     phone: '',
+    members: [],
   });
 
   const isAdmin = userRole === 'admin' || userRole === 'superAdmin';
+
+  useEffect(() => {
+    const usersRef = ref(database, 'users');
+    get(usersRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        const users = [];
+        snapshot.forEach((child) => {
+          const u = child.val();
+          users.push({
+            uid: child.key,
+            name: `${u.firstName} ${u.lastName}`,
+            email: u.email
+          });
+        });
+        setAllUsers(users);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const orgsRef = ref(database, 'organizations');
@@ -87,10 +108,15 @@ const OrganizationsPage = () => {
     }
 
     try {
+      const orgData = {
+        ...orgForm,
+        members: orgForm.members.map(m => m.uid),
+      };
+
       if (selectedOrg) {
         // Update existing
         await update(ref(database, `organizations/${selectedOrg.id}`), {
-          ...orgForm,
+          ...orgData,
           updatedAt: new Date().toISOString(),
         });
         showSuccess('Organization updated successfully');
@@ -99,7 +125,7 @@ const OrganizationsPage = () => {
         const orgId = push(ref(database, 'organizations')).key;
         await set(ref(database, `organizations/${orgId}`), {
           id: orgId,
-          ...orgForm,
+          ...orgData,
           submittedBy: user.uid,
           submitterName: user.displayName || user.email,
           status: 'pending',
@@ -213,19 +239,6 @@ const OrganizationsPage = () => {
     }
   };
 
-  const openEditOrg = (org) => {
-    setSelectedOrg(org);
-    setOrgForm({
-      name: org.name,
-      description: org.description,
-      type: org.type,
-      website: org.website,
-      email: org.email,
-      phone: org.phone,
-    });
-    setOrgDialog(true);
-  };
-
   const resetForm = () => {
     setOrgForm({
       name: '',
@@ -234,6 +247,7 @@ const OrganizationsPage = () => {
       website: '',
       email: '',
       phone: '',
+      members: [],
     });
   };
 
@@ -382,6 +396,7 @@ const OrganizationsPage = () => {
                             website: org.website || '',
                             email: org.email || '',
                             phone: org.phone || '',
+                            members: org.members ? allUsers.filter(u => org.members.includes(u.uid)) : [],
                           });
                           setOrgDialog(true);
                         }}
@@ -488,6 +503,21 @@ const OrganizationsPage = () => {
                 label={t('organization.phone')}
                 value={orgForm.phone}
                 onChange={(e) => setOrgForm({ ...orgForm, phone: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Autocomplete
+                multiple
+                options={allUsers}
+                getOptionLabel={(option) => option.name}
+                renderInput={(params) => (
+                  <TextField {...params} label={t('organization.members')} placeholder={t('organization.addMembers')} />
+                )}
+                value={orgForm.members}
+                onChange={(event, newValue) => {
+                  setOrgForm({ ...orgForm, members: newValue });
+                }}
+                isOptionEqualToValue={(option, value) => option.uid === value.uid}
               />
             </Grid>
           </Grid>

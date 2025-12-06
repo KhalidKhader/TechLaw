@@ -59,6 +59,7 @@ const TasksPage = () => {
   const [confirmDialog, setConfirmDialog] = useState({ open: false, taskId: null });
   const [activeTab, setActiveTab] = useState(0);
   const [taskDialog, setTaskDialog] = useState(false);
+  const [viewDialog, setViewDialog] = useState(false);
   const [commentDialog, setCommentDialog] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   
@@ -251,6 +252,11 @@ const TasksPage = () => {
     setTaskDialog(true);
   };
 
+  const openViewTask = (task) => {
+    setSelectedTask(task);
+    setViewDialog(true);
+  };
+
   const openCommentDialog = (task) => {
     setSelectedTask(task);
     setCommentDialog(true);
@@ -371,7 +377,7 @@ const TasksPage = () => {
                       {task.title}
                     </Typography>
                     <Chip
-                      label={task.priority}
+                      label={t(`common.${task.priority}`) || task.priority}
                       color={getPriorityColor(task.priority)}
                       size="small"
                     />
@@ -407,6 +413,7 @@ const TasksPage = () => {
                           : [task.assignedTo].filter(Boolean);
                         
                         return assignedUsers.map((userId, index) => {
+                          if (!userId || userId === 'undefined') return null;
                           const assignedUser = users.find(u => u.uid === userId);
                           
                           // If user not found in users list, try to get basic info or show loading state
@@ -449,6 +456,9 @@ const TasksPage = () => {
 
                 <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
                   <Box display="flex" gap={1}>
+                    <Button size="small" onClick={() => openViewTask(task)}>
+                      {t('common.view')}
+                    </Button>
                     {task.status !== 'completed' && (
                       Array.isArray(task.assignedTo) 
                         ? task.assignedTo.includes(user.uid) 
@@ -482,6 +492,58 @@ const TasksPage = () => {
           ))}
         </Grid>
       )}
+
+      {/* View Task Dialog */}
+      <Dialog open={viewDialog} onClose={() => setViewDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {t('common.viewTask')}
+        </DialogTitle>
+        <DialogContent>
+          {selectedTask && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="h6" gutterBottom>{selectedTask.title}</Typography>
+              <Chip 
+                label={t(`common.${selectedTask.priority}`) || selectedTask.priority} 
+                color={getPriorityColor(selectedTask.priority)} 
+                size="small" 
+                sx={{ mb: 2 }} 
+              />
+              
+              <Typography variant="subtitle2" color="text.secondary">{t('common.description')}</Typography>
+              <Typography variant="body1" paragraph>{selectedTask.description}</Typography>
+              
+              <Typography variant="subtitle2" color="text.secondary">{t('common.status')}</Typography>
+              <Chip 
+                label={t(`common.${selectedTask.status}`) || selectedTask.status} 
+                color={getStatusColor(selectedTask.status)} 
+                size="small" 
+                sx={{ mb: 2 }} 
+              />
+              
+              <Typography variant="subtitle2" color="text.secondary">{t('task.deadline')}</Typography>
+              <Typography variant="body1" paragraph>{new Date(selectedTask.deadline).toLocaleDateString()}</Typography>
+              
+              <Typography variant="subtitle2" color="text.secondary">{t('task.assignedTo')}</Typography>
+              <Box display="flex" flexWrap="wrap" gap={0.5} mb={2}>
+                {(() => {
+                  const assignedUsers = Array.isArray(selectedTask.assignedTo) 
+                    ? selectedTask.assignedTo 
+                    : [selectedTask.assignedTo].filter(Boolean);
+                  
+                  return assignedUsers.map((userId) => {
+                    const user = users.find(u => u.uid === userId);
+                    const userName = getUserFullName(user);
+                    return <Chip key={userId} label={userName} size="small" avatar={<Avatar>{userName.charAt(0)}</Avatar>} />;
+                  });
+                })()}
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setViewDialog(false)}>{t('common.close')}</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Create/Edit Task Dialog */}
       <Dialog open={taskDialog} onClose={() => setTaskDialog(false)} maxWidth="md" fullWidth>
@@ -574,7 +636,7 @@ const TasksPage = () => {
                 onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}
               >
                 <MenuItem value="pending">{t('common.pending')}</MenuItem>
-                <MenuItem value="in-progress">{t('task.inProgress')}</MenuItem>
+                <MenuItem value="in-progress">{t('common.inProgress')}</MenuItem>
                 <MenuItem value="completed">{t('common.completed')}</MenuItem>
               </TextField>
             </Grid>

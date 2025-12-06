@@ -30,7 +30,6 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  ContentCopy as CopyIcon,
   Visibility as ViewIcon,
   CheckCircle as ApproveIcon,
   Cancel as RejectIcon,
@@ -41,7 +40,7 @@ import { database } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../hooks/useI18n';
 import { showSuccess, showError } from '../utils/toast';
-import { sendNotification, NotificationTemplates } from '../utils/notificationHelpers';
+import { sendNotification } from '../utils/notificationHelpers';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const FormsPage = () => {
@@ -263,28 +262,6 @@ const FormsPage = () => {
     } catch (error) {
       showError('Failed to delete form: ' + error.message);
     }
-  };
-
-  const handleDuplicateForm = (form) => {
-    setFormData({
-      title: `${form.title} (Copy)`,
-      description: form.description,
-      category: form.category,
-      fields: form.fields,
-    });
-    setSelectedForm(null);
-    setFormDialog(true);
-  };
-
-  const handleEditForm = (form) => {
-    setSelectedForm(form);
-    setFormData({
-      title: form.title,
-      description: form.description,
-      category: form.category,
-      fields: form.fields || [],
-    });
-    setFormDialog(true);
   };
 
   const handleCloseDialog = () => {

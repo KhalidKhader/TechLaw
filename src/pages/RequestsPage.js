@@ -20,6 +20,7 @@ import {
   IconButton,
   Tabs,
   Tab,
+  Autocomplete,
 } from '@mui/material';
 import {
   CheckCircle as ApproveIcon,
@@ -27,7 +28,7 @@ import {
   Edit as EditIcon,
   Visibility as ViewIcon,
 } from '@mui/icons-material';
-import { ref, onValue, push, set, update, query, orderByChild, equalTo } from 'firebase/database';
+import { ref, onValue, push, set, update, query, orderByChild, equalTo, get } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../hooks/useI18n';
@@ -45,15 +46,35 @@ const RequestsPage = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [requestDialog, setRequestDialog] = useState(false);
   const [usersData, setUsersData] = useState({});
+  const [allUsers, setAllUsers] = useState([]);
   
   const [requestForm, setRequestForm] = useState({
     type: 'profile_edit',
     title: '',
     description: '',
     changes: {},
+    targetUser: null,
   });
 
   const isAdmin = userRole === 'admin' || userRole === 'superAdmin';
+
+  useEffect(() => {
+    const usersRef = ref(database, 'users');
+    get(usersRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        const users = [];
+        snapshot.forEach((child) => {
+          const u = child.val();
+          users.push({
+            uid: child.key,
+            name: `${u.firstName} ${u.lastName}`,
+            email: u.email
+          });
+        });
+        setAllUsers(users);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -116,6 +137,7 @@ const RequestsPage = () => {
       await set(ref(database, `editRequests/${requestId}`), {
         id: requestId,
         ...requestForm,
+        targetUser: requestForm.targetUser ? requestForm.targetUser.uid : null,
         requestedBy: user.uid,
         requesterName: requesterName,
         status: 'pending',
@@ -146,6 +168,7 @@ const RequestsPage = () => {
         title: '',
         description: '',
         changes: {},
+        targetUser: null,
       });
     } catch (error) {
       showError(t('requests.submitError') + ': ' + error.message);
@@ -269,6 +292,7 @@ const RequestsPage = () => {
               title: '',
               description: '',
               changes: {},
+              targetUser: null,
             });
             setRequestDialog(true);
           }}
@@ -395,6 +419,18 @@ const RequestsPage = () => {
               value={requestForm.description}
               onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })}
               placeholder={t('requests.descriptionPlaceholder')}
+            />
+            <Autocomplete
+              options={allUsers}
+              getOptionLabel={(option) => option.name}
+              renderInput={(params) => (
+                <TextField {...params} label={t('requests.targetUser')} placeholder={t('requests.selectTargetUser')} />
+              )}
+              value={requestForm.targetUser}
+              onChange={(event, newValue) => {
+                setRequestForm({ ...requestForm, targetUser: newValue });
+              }}
+              isOptionEqualToValue={(option, value) => option.uid === value.uid}
             />
             <Alert severity="info">
               {t('requests.adminReviewInfo')}

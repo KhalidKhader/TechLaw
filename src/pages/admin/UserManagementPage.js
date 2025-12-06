@@ -119,6 +119,18 @@ const UserManagementPage = () => {
     }
   };
 
+  const handleUnsuspend = async (uid) => {
+    try {
+      await update(ref(database, `users/${uid}`), {
+        status: 'approved',
+        unsuspendedAt: new Date().toISOString(),
+      });
+      showSuccess('User unsuspended');
+    } catch (error) {
+      showError('Failed to unsuspend user: ' + error.message);
+    }
+  };
+
 
 
   const handleChangeRole = async () => {
@@ -349,7 +361,7 @@ const UserManagementPage = () => {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={user.role || 'viewer'}
+                        label={t(`common.${user.role || 'viewer'}`)}
                         color={getRoleColor(user.role)}
                         size="small"
                         onClick={() => openRoleDialog(user)}
@@ -397,14 +409,25 @@ const UserManagementPage = () => {
                         >
                           <RoleIcon />
                         </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleSuspend(user.uid)}
-                          title={t('admin.suspend')}
-                        >
-                          <SuspendIcon />
-                        </IconButton>
+                        {user.status === 'suspended' ? (
+                          <IconButton
+                            size="small"
+                            color="success"
+                            onClick={() => handleUnsuspend(user.uid)}
+                            title={t('common.unsuspend')}
+                          >
+                            <ApproveIcon />
+                          </IconButton>
+                        ) : (
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleSuspend(user.uid)}
+                            title={t('common.suspend')}
+                          >
+                            <SuspendIcon />
+                          </IconButton>
+                        )}
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -431,10 +454,10 @@ const UserManagementPage = () => {
               onChange={(e) => setNewRole(e.target.value)}
               sx={{ mt: 2 }}
             >
-              <MenuItem value="viewer">{t('roles.viewer')}</MenuItem>
-              <MenuItem value="user">{t('roles.user')}</MenuItem>
-              <MenuItem value="admin">{t('roles.admin')}</MenuItem>
-              <MenuItem value="superAdmin">{t('roles.superAdmin')}</MenuItem>
+              <MenuItem value="viewer">{t('common.viewer')}</MenuItem>
+              <MenuItem value="user">{t('common.user')}</MenuItem>
+              <MenuItem value="admin">{t('common.admin')}</MenuItem>
+              <MenuItem value="superAdmin">{t('common.superAdmin')}</MenuItem>
             </TextField>
           </Box>
         </DialogContent>

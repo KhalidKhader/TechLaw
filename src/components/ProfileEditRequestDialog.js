@@ -12,11 +12,10 @@ import {
   Card,
   CardContent,
   Chip,
-  Avatar,
   Alert
 } from '@mui/material';
 import { Edit as EditIcon, Send as SendIcon } from '@mui/icons-material';
-import { ref, push, onValue, update } from 'firebase/database';
+import { ref, push, onValue } from 'firebase/database';
 import { database } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../hooks/useI18n';

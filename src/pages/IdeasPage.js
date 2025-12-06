@@ -22,6 +22,7 @@ import {
   Tab,
   Alert,
   CircularProgress,
+  Autocomplete,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -46,15 +47,35 @@ const IdeasPage = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [ideaDialog, setIdeaDialog] = useState(false);
   const [usersData, setUsersData] = useState({});
+  const [allUsers, setAllUsers] = useState([]);
   
   const [ideaForm, setIdeaForm] = useState({
     title: '',
     description: '',
     category: 'general',
     visibility: 'admin',
+    selectedUsers: [],
   });
 
   const isAdmin = userRole === 'admin' || userRole === 'superAdmin';
+
+  useEffect(() => {
+    const usersRef = ref(database, 'users');
+    get(usersRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        const users = [];
+        snapshot.forEach((child) => {
+          const u = child.val();
+          users.push({
+            uid: child.key,
+            name: `${u.firstName} ${u.lastName}`,
+            email: u.email
+          });
+        });
+        setAllUsers(users);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const ideasRef = ref(database, 'ideas');
@@ -98,6 +119,11 @@ const IdeasPage = () => {
       return;
     }
 
+    if (ideaForm.visibility === 'select' && ideaForm.selectedUsers.length === 0) {
+      showError('Please select at least one user');
+      return;
+    }
+
     try {
       // Get user data from database
       const userData = await getUserData(user.uid);
@@ -106,7 +132,8 @@ const IdeasPage = () => {
         : userData?.email || user.email;
 
       const ideaId = push(ref(database, 'ideas')).key;
-      await set(ref(database, `ideas/${ideaId}`), {
+      
+      const ideaData = {
         id: ideaId,
         ...ideaForm,
         submittedBy: user.uid,
@@ -115,7 +142,15 @@ const IdeasPage = () => {
         likes: 0,
         likedBy: {},
         createdAt: new Date().toISOString(),
-      });
+      };
+
+      if (ideaForm.visibility === 'select') {
+        ideaData.selectedUsers = ideaForm.selectedUsers.map(u => u.uid);
+      } else {
+        delete ideaData.selectedUsers;
+      }
+
+      await set(ref(database, `ideas/${ideaId}`), ideaData);
 
       // Send notification to admins
       const usersRef = ref(database, 'users');
@@ -235,6 +270,7 @@ const IdeasPage = () => {
       description: '',
       category: 'general',
       visibility: 'admin',
+      selectedUsers: [],
     });
   };
 
@@ -452,8 +488,26 @@ const IdeasPage = () => {
               >
                 <MenuItem value="admin">{t('ideas.visibilityAdmin')}</MenuItem>
                 <MenuItem value="all">{t('ideas.visibilityAll')}</MenuItem>
+                <MenuItem value="select">{t('ideas.visibilitySelect')}</MenuItem>
               </TextField>
             </Grid>
+            {ideaForm.visibility === 'select' && (
+              <Grid item xs={12}>
+                <Autocomplete
+                  multiple
+                  options={allUsers}
+                  getOptionLabel={(option) => option.name}
+                  renderInput={(params) => (
+                    <TextField {...params} label={t('ideas.selectUsers')} placeholder={t('ideas.selectUsersPlaceholder')} />
+                  )}
+                  value={ideaForm.selectedUsers}
+                  onChange={(event, newValue) => {
+                    setIdeaForm({ ...ideaForm, selectedUsers: newValue });
+                  }}
+                  isOptionEqualToValue={(option, value) => option.uid === value.uid}
+                />
+              </Grid>
+            )}
           </Grid>
         </DialogContent>
         <DialogActions>
